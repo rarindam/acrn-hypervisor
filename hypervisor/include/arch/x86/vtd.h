@@ -35,6 +35,15 @@
 #define DMAR_ICS_REG    0x9cU    /* Invalidation complete status register */
 #define DMAR_IRTA_REG   0xb8U    /* Interrupt remapping table addr register */
 
+struct iommu_domain {
+	bool is_host;
+	bool is_tt_ept;     /* if reuse EPT of the domain */
+	uint16_t vm_id;
+	uint32_t addr_width;   /* address width of the domain */
+	uint64_t trans_table_ptr;
+	bool iommu_snoop;
+};
+
 static inline uint8_t dmar_ver_major(uint64_t version)
 {
 	return (((uint8_t)version & 0xf0U) >> 4U);
@@ -599,25 +608,27 @@ int32_t init_iommu(void);
  * Create SOS_VM domain using the Normal World's EPT table of SOS_VM as address translation table.
  * All PCI devices are added to the SOS_VM domain when creating it.
  *
- * @param[in] sos_vm pointer to SOS_VM
+ * @param[in] sos_vm_iommu pointer to SOS_VM iommu domain
+ * @param[in] vm_id ID of the VM for which iommu_domain needs to be created
+ * @param[in] translation_table EPT hieararchy table
  *
- * @pre sos_vm shall point to SOS_VM
+ * @pre iommu shall point to SOS_VM iommu domain
  *
  * @remark to reduce boot time & memory cost, a config IOMMU_INIT_BUS_LIMIT, which limit the bus number.
  *
  */
-void init_iommu_sos_vm_domain(struct acrn_vm *sos_vm);
+void init_iommu_sos_vm_domain(struct iommu_domain *sos_vm_iommu, uint16_t vm_id, void *translation_table);
 
 /**
  * @brief check the iommu if support cache snoop.
  *
- * @param[in] vm pointer to VM to check
+ * @param[in] iommu pointer to iommu domain to check
  *
  * @retval true support
  * @retval false not support
  *
  */
-bool iommu_snoop_supported(const struct acrn_vm *vm);
+bool iommu_snoop_supported(const struct iommu_domain *iommu);
 
 /**
   * @}

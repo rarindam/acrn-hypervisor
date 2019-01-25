@@ -7,6 +7,7 @@
 #define pr_prefix		"iommu: "
 
 #include <hypervisor.h>
+#include <vtd.h>
 
 #define DBG_IOMMU 0
 
@@ -116,15 +117,6 @@ struct dmar_context_entry {
 	uint64_t upper;
 };
 
-struct iommu_domain {
-	bool is_host;
-	bool is_tt_ept;     /* if reuse EPT of the domain */
-	uint16_t vm_id;
-	uint32_t addr_width;   /* address width of the domain */
-	uint64_t trans_table_ptr;
-	bool iommu_snoop;
-};
-
 struct context_table {
 	struct page buses[CONFIG_IOMMU_BUS_NUM];
 };
@@ -141,11 +133,11 @@ static inline uint8_t* get_ctx_table(uint32_t dmar_index, uint8_t bus_no)
 	return ctx_tables[dmar_index].buses[bus_no].contents;
 }
 
-bool iommu_snoop_supported(const struct acrn_vm *vm)
+bool iommu_snoop_supported(const struct iommu_domain *iommu)
 {
 	bool ret;
 
-	if ((vm->iommu == NULL) || (vm->iommu->iommu_snoop)) {
+	if ((iommu == NULL) || (iommu->iommu_snoop)) {
 		ret =  true;
 	} else {
 		ret = false;
@@ -1121,14 +1113,14 @@ int32_t init_iommu(void)
 	return ret;
 }
 
-void init_iommu_sos_vm_domain(struct acrn_vm *sos_vm)
+void init_iommu_sos_vm_domain(struct iommu_domain *sos_vm_iommu, uint16_t vm_id, void *translation_table)
 {
 	uint16_t bus;
 	uint16_t devfun;
 
-	sos_vm->iommu = create_iommu_domain(sos_vm->vm_id, hva2hpa(sos_vm->arch_vm.nworld_eptp), 48U);
+	sos_vm_iommu = create_iommu_domain(vm_id, hva2hpa(translation_table), 48U);
 
-	sos_vm_domain = (struct iommu_domain *) sos_vm->iommu;
+	sos_vm_domain = (struct iommu_domain *) sos_vm_iommu;
 	if (sos_vm_domain == NULL) {
 		pr_err("sos_vm domain is NULL\n");
 	} else {
