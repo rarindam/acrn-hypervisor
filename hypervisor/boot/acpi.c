@@ -27,7 +27,13 @@
  * SUCH DAMAGE.
  */
 
-#include <hypervisor.h>
+#include <types.h>
+#include <lib/rtl.h>
+#include <bsp_extern.h>
+#include <pgtable.h>
+#include <ioapic.h>
+#include <logmsg.h>
+#include <host_pm.h>
 #include "acpi_priv.h"
 #include "acpi.h"
 
