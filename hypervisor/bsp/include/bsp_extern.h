@@ -18,6 +18,7 @@
 #ifndef BSP_EXTERN_H
 #define BSP_EXTERN_H
 
+#include <types.h>
 #include "default_acpi_info.h"
 #include "platform_acpi_info.h"
 
