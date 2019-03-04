@@ -38,6 +38,7 @@
 #ifndef CPU_H
 #define CPU_H
 
+#include <types.h>
 /* Define CPU stack alignment */
 #define CPU_STACK_ALIGN         16UL
 

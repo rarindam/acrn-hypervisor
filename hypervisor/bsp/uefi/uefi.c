@@ -4,10 +4,15 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include <hypervisor.h>
 #include <multiboot.h>
 #include <boot_context.h>
 #include <uefi.h>
+#include <types.h>
+#include <rtl.h>
+#include <logmsg.h>
+#include <pgtable.h>
+#include <lapic.h>
+#include <bsp_extern.h>
 
 static struct efi_context efi_ctx;
 static struct lapic_regs uefi_lapic_regs;

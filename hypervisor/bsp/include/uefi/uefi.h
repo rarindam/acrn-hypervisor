@@ -7,6 +7,8 @@
 #ifndef _UEFI_H_
 #define _UEFI_H_
 
+#include <acrn_common.h>
+
 struct efi_context {
 	struct acrn_vcpu_regs vcpu_regs;
 	void *rsdp;

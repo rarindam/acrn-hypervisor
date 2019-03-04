@@ -3,8 +3,8 @@
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
-
-#include <hypervisor.h>
+#include <bsp_extern.h>
+#include <cpu.h>
 #include <e820.h>
 
 void    init_bsp(void)
