@@ -10,6 +10,7 @@
 #include <spinlock.h>
 #include <pci.h>
 #include <timer.h>
+#include <vm.h>
 
 #define ACTIVE_FLAG 0x1U /* any non zero should be okay */
 

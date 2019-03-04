@@ -6,6 +6,7 @@
 
 #ifndef MULTIBOOT_H
 #define MULTIBOOT_H
+#include <types.h>
 
 #define	MULTIBOOT_INFO_MAGIC		0x2BADB002U
 #define	MULTIBOOT_INFO_HAS_CMDLINE	0x00000004U
