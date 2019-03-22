@@ -266,7 +266,7 @@ static struct ptirq_remapping_info *add_msix_remapping(struct acrn_vm *vm,
 		if (ptirq_lookup_entry_by_sid(PTDEV_INTR_MSI, &virt_sid, vm) != NULL) {
 			pr_err("MSIX re-add vbdf%x", virt_bdf);
 		} else {
-			entry = ptirq_alloc_entry(vm, PTDEV_INTR_MSI);
+			entry = ptirq_alloc_entry(vm->vm_id, PTDEV_INTR_MSI);
 			if (entry != NULL) {
 				entry->phys_sid.value = phys_sid.value;
 				entry->virt_sid.value = virt_sid.value;
@@ -351,7 +351,7 @@ static struct ptirq_remapping_info *add_intx_remapping(struct acrn_vm *vm, uint3
 		entry = ptirq_lookup_entry_by_sid(PTDEV_INTR_INTX, &phys_sid, NULL);
 		if (entry == NULL) {
 			if (ptirq_lookup_entry_by_vpin(vm, virt_pin, pic_pin) == NULL) {
-				entry = ptirq_alloc_entry(vm, PTDEV_INTR_INTX);
+				entry = ptirq_alloc_entry(vm->vm_id, PTDEV_INTR_INTX);
 				if (entry != NULL) {
 					entry->phys_sid.value = phys_sid.value;
 					entry->virt_sid.value = virt_sid.value;
@@ -498,9 +498,11 @@ void ptirq_softirq(uint16_t pcpu_id)
 {
 	struct acrn_vcpu *vcpu = (struct acrn_vcpu *)per_cpu(vcpu, pcpu_id);
 	struct acrn_vm *vm = vcpu->vm;
+	struct acrn_vm_config *vm_config = get_vm_config(vm->vm_id);
 
 	while (1) {
-		struct ptirq_remapping_info *entry = ptirq_dequeue_softirq(vm);
+		struct ptirq_remapping_info *entry = ptirq_dequeue_softirq(vm_config->type, &vm->softirq_dev_lock,
+									   &vm->softirq_dev_entry_list);
 		struct ptirq_msi_info *msi;
 
 		if (entry == NULL) {
