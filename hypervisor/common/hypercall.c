@@ -1157,7 +1157,7 @@ int32_t hcall_vm_intr_monitor(struct acrn_vm *vm, uint16_t vmid, uint64_t param)
 			if (intr_hdr->buf_cnt <= (MAX_PTDEV_NUM * 2U)) {
 				switch (intr_hdr->cmd) {
 				case INTR_CMD_GET_DATA:
-					intr_hdr->buf_cnt = ptirq_get_intr_data(target_vm,
+					intr_hdr->buf_cnt = ptirq_get_intr_data(target_vm->vm_id,
 						intr_hdr->buffer, intr_hdr->buf_cnt);
 					break;
 

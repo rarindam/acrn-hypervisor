@@ -62,6 +62,10 @@ bool is_sos_vm(const struct acrn_vm *vm)
 	return (vm != NULL) && (vm == sos_vm_ptr);
 }
 
+bool is_sos_vm_by_type(uint16_t vm_type)
+{
+	return (vm_type == SOS_VM);
+}
 /**
  * @pre vm != NULL && vm_config != NULL && vm->vmid < CONFIG_MAX_VM_NUM
  */
@@ -453,7 +457,7 @@ int32_t shutdown_vm(struct acrn_vm *vm)
 			offline_vcpu(vcpu);
 		}
 
-		ptdev_release_all_entries(vm);
+		ptdev_release_all_entries(vm->vm_id);
 
 		vpci_cleanup(vm);
 

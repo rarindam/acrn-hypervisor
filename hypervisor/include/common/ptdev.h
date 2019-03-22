@@ -139,6 +139,7 @@ struct ptirq_remapping_info {
 
 	uint64_t intr_count;
 	struct hv_timer intr_delay_timer; /* used for delay intr injection */
+	uint16_t vm_id;
 };
 
 extern struct ptirq_remapping_info ptirq_entries[CONFIG_MAX_PT_IRQ_ENTRIES];
@@ -147,14 +148,14 @@ extern spinlock_t ptdev_lock;
 bool is_entry_active(const struct ptirq_remapping_info *entry);
 void ptirq_softirq(uint16_t pcpu_id);
 void ptdev_init(void);
-void ptdev_release_all_entries(const struct acrn_vm *vm);
+void ptdev_release_all_entries(uint16_t vm_id);
 
-struct ptirq_remapping_info *ptirq_dequeue_softirq(struct acrn_vm *vm);
-struct ptirq_remapping_info *ptirq_alloc_entry(struct acrn_vm *vm, uint32_t intr_type);
+struct ptirq_remapping_info *ptirq_dequeue_softirq(uint16_t vm_type, spinlock_t *softirq_dev_entry_list, struct list_head *head);
+struct ptirq_remapping_info *ptirq_alloc_entry(uint16_t vm_id, uint32_t intr_type);
 void ptirq_release_entry(struct ptirq_remapping_info *entry);
 int32_t ptirq_activate_entry(struct ptirq_remapping_info *entry, uint32_t phys_irq);
 void ptirq_deactivate_entry(struct ptirq_remapping_info *entry);
 
-uint32_t ptirq_get_intr_data(const struct acrn_vm *target_vm, uint64_t *buffer, uint32_t buffer_cnt);
+uint32_t ptirq_get_intr_data(uint16_t target_vm_id, uint64_t *buffer, uint32_t buffer_cnt);
 
 #endif /* PTDEV_H */

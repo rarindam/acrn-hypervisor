@@ -57,20 +57,21 @@ static void ptirq_intr_delay_callback(void *data)
 	ptirq_enqueue_softirq(entry);
 }
 
-struct ptirq_remapping_info *ptirq_dequeue_softirq(struct acrn_vm *vm)
+struct ptirq_remapping_info *ptirq_dequeue_softirq(uint16_t vm_type, spinlock_t *softirq_dev_lock,
+                                                   struct list_head *softirq_dev_entry_list)
 {
 	uint64_t rflags;
 	struct ptirq_remapping_info *entry = NULL;
 
-	spinlock_irqsave_obtain(&vm->softirq_dev_lock, &rflags);
+	spinlock_irqsave_obtain(softirq_dev_lock, &rflags);
 
-	while (!list_empty(&vm->softirq_dev_entry_list)) {
-		entry = get_first_item(&vm->softirq_dev_entry_list, struct ptirq_remapping_info, softirq_node);
+	while (!list_empty(softirq_dev_entry_list)) {
+		entry = get_first_item(softirq_dev_entry_list, struct ptirq_remapping_info, softirq_node);
 
 		list_del_init(&entry->softirq_node);
 
 		/* if sos vm, just dequeue, if uos, check delay timer */
-		if (is_sos_vm(entry->vm) || timer_expired(&entry->intr_delay_timer)) {
+		if (is_sos_vm_by_type (vm_type) || timer_expired(&entry->intr_delay_timer)) {
 			break;
 		} else {
 			/* add it into timer list; dequeue next one */
@@ -79,11 +80,11 @@ struct ptirq_remapping_info *ptirq_dequeue_softirq(struct acrn_vm *vm)
 		}
 	}
 
-	spinlock_irqrestore_release(&vm->softirq_dev_lock, rflags);
+	spinlock_irqrestore_release(softirq_dev_lock, rflags);
 	return entry;
 }
 
-struct ptirq_remapping_info *ptirq_alloc_entry(struct acrn_vm *vm, uint32_t intr_type)
+struct ptirq_remapping_info *ptirq_alloc_entry(uint16_t vm_id, uint32_t intr_type)
 {
 	struct ptirq_remapping_info *entry = NULL;
 	uint16_t ptirq_id = ptirq_alloc_entry_id();
@@ -93,7 +94,7 @@ struct ptirq_remapping_info *ptirq_alloc_entry(struct acrn_vm *vm, uint32_t intr
 		(void)memset((void *)entry, 0U, sizeof(struct ptirq_remapping_info));
 		entry->ptdev_entry_id = ptirq_id;
 		entry->intr_type = intr_type;
-		entry->vm = vm;
+		entry->vm_id = vm_id;
 		entry->intr_count = 0UL;
 
 		INIT_LIST_HEAD(&entry->softirq_node);
@@ -199,7 +200,7 @@ void ptdev_init(void)
 	}
 }
 
-void ptdev_release_all_entries(const struct acrn_vm *vm)
+void ptdev_release_all_entries(uint16_t vm_id)
 {
 	struct ptirq_remapping_info *entry;
 	uint16_t idx;
@@ -207,7 +208,7 @@ void ptdev_release_all_entries(const struct acrn_vm *vm)
 	/* VM already down */
 	for (idx = 0U; idx < CONFIG_MAX_PT_IRQ_ENTRIES; idx++) {
 		entry = &ptirq_entries[idx];
-		if (entry->vm == vm) {
+		if (entry->vm_id == vm_id) {
 			spinlock_obtain(&ptdev_lock);
 			ptirq_release_entry(entry);
 			spinlock_release(&ptdev_lock);
@@ -216,7 +217,7 @@ void ptdev_release_all_entries(const struct acrn_vm *vm)
 
 }
 
-uint32_t ptirq_get_intr_data(const struct acrn_vm *target_vm, uint64_t *buffer, uint32_t buffer_cnt)
+uint32_t ptirq_get_intr_data(uint16_t target_vm_id, uint64_t *buffer, uint32_t buffer_cnt)
 {
 	uint32_t index = 0U;
 	uint16_t i;
@@ -227,7 +228,7 @@ uint32_t ptirq_get_intr_data(const struct acrn_vm *target_vm, uint64_t *buffer, 
 		if (!is_entry_active(entry)) {
 			continue;
 		}
-		if (entry->vm == target_vm) {
+		if (entry->vm_id == target_vm_id) {
 			buffer[index] = entry->allocated_pirq;
 			buffer[index + 1U] = entry->intr_count;
 
