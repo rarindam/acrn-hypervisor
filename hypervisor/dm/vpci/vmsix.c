@@ -36,7 +36,7 @@
 #include <ept.h>
 #include <mmu.h>
 #include <logmsg.h>
-#include "pci_priv.h"
+#include "vpci_priv.h"
 
 /**
  * @pre vdev != NULL
@@ -210,9 +210,13 @@ int32_t vmsix_cfgwrite(struct pci_vdev *vdev, uint32_t offset, uint32_t bytes, u
 	return ret;
 }
 
-static void vmsix_table_rw(struct pci_vdev *vdev, struct mmio_request *mmio, uint32_t offset)
+/**
+ * @pre vdev != NULL
+ * @pre mmio != NULL
+ */
+static void vmsix_table_rw(const struct pci_vdev *vdev, struct mmio_request *mmio, uint32_t offset)
 {
-	struct msix_table_entry *entry;
+	const struct msix_table_entry *entry;
 	uint32_t vector_control, entry_offset, table_offset, index;
 	bool message_changed = false;
 	bool unmasked;
@@ -279,6 +283,10 @@ static void vmsix_table_rw(struct pci_vdev *vdev, struct mmio_request *mmio, uin
 
 }
 
+/**
+ * @pre io_req != NULL
+ * @pre handler_private_data != NULL
+ */
 static int32_t vmsix_table_mmio_access_handler(struct io_request *io_req, void *handler_private_data)
 {
 	struct mmio_request *mmio = &io_req->reqs.mmio;

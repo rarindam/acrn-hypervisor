@@ -351,9 +351,13 @@ struct acrn_create_vm {
 	 */
 	uint64_t vm_flag;
 
+	uint64_t req_buf;
+
 	/** Reserved for future use*/
-	uint8_t  reserved2[24];
+	uint8_t  reserved2[16];
 } __aligned(8);
+
+#define MAX_VM_OS_NAME_LEN    32U
 
 /**
  * @brief Info to create a VCPU

@@ -332,11 +332,6 @@ static void init_msr_area(struct acrn_vcpu *vcpu)
 	vcpu->arch.msr_area.guest[MSR_AREA_TSC_AUX].value = vcpu->vcpu_id;
 	vcpu->arch.msr_area.host[MSR_AREA_TSC_AUX].msr_index = MSR_IA32_TSC_AUX;
 	vcpu->arch.msr_area.host[MSR_AREA_TSC_AUX].value = vcpu->pcpu_id;
-
-	vcpu->arch.msr_area.guest[MSR_AREA_IA32_MISC_ENABLE].msr_index = MSR_IA32_MISC_ENABLE;
-	vcpu->arch.msr_area.guest[MSR_AREA_IA32_MISC_ENABLE].value = msr_read(MSR_IA32_MISC_ENABLE);
-	vcpu->arch.msr_area.host[MSR_AREA_IA32_MISC_ENABLE].msr_index = MSR_IA32_MISC_ENABLE;
-	vcpu->arch.msr_area.host[MSR_AREA_IA32_MISC_ENABLE].value = msr_read(MSR_IA32_MISC_ENABLE);
 }
 
 void init_msr_emulation(struct acrn_vcpu *vcpu)
@@ -640,10 +635,11 @@ void update_msr_bitmap_x2apic_apicv(const struct acrn_vcpu *vcpu)
 		 * writes to them are virtualized with Register Virtualization
 		 * Refer to Section 29.1 in Intel SDM Vol. 3
 		 */
-		enable_msr_interception(msr_bitmap, MSR_IA32_EXT_APIC_TPR, INTERCEPT_DISABLE);
 		enable_msr_interception(msr_bitmap, MSR_IA32_EXT_APIC_EOI, INTERCEPT_READ);
 		enable_msr_interception(msr_bitmap, MSR_IA32_EXT_APIC_SELF_IPI, INTERCEPT_READ);
 	}
+
+	enable_msr_interception(msr_bitmap, MSR_IA32_EXT_APIC_TPR, INTERCEPT_DISABLE);
 }
 
 /*

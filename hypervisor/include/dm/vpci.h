@@ -76,10 +76,8 @@ struct pci_vdev {
 	/* The bar info of the virtual PCI device. */
 	struct pci_bar bar[PCI_BAR_COUNT];
 
-#ifndef CONFIG_PARTITION_MODE
 	struct pci_msi msi;
 	struct pci_msix msix;
-#endif
 };
 
 struct pci_addr_info {
@@ -94,20 +92,6 @@ struct acrn_vpci {
 	uint32_t pci_vdev_cnt;
 	struct pci_vdev pci_vdevs[CONFIG_MAX_PCI_DEV_NUM];
 };
-
-int32_t partition_mode_vpci_init(const struct acrn_vm *vm);
-void partition_mode_cfgread(struct acrn_vpci *vpci, union pci_bdf vbdf,
-	uint32_t offset, uint32_t bytes, uint32_t *val);
-void partition_mode_cfgwrite(struct acrn_vpci *vpci, union pci_bdf vbdf,
-	uint32_t offset, uint32_t bytes, uint32_t val);
-void partition_mode_vpci_deinit(const struct acrn_vm *vm);
-
-int32_t sharing_mode_vpci_init(const struct acrn_vm *vm);
-void sharing_mode_cfgread(struct acrn_vpci *vpci, union pci_bdf bdf,
-	uint32_t offset, uint32_t bytes, uint32_t *val);
-void sharing_mode_cfgwrite(__unused struct acrn_vpci *vpci, union pci_bdf bdf,
-	uint32_t offset, uint32_t bytes, uint32_t val);
-void sharing_mode_vpci_deinit(const struct acrn_vm *vm);
 
 void vpci_init(struct acrn_vm *vm);
 void vpci_cleanup(const struct acrn_vm *vm);
