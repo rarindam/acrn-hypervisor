@@ -36,7 +36,7 @@
 
 static void vpic_set_pinstate(struct acrn_vpic *vpic, uint32_t pin, uint8_t level);
 
-static inline struct acrn_vpic *vm_pic(const struct acrn_vm *vm)
+struct acrn_vpic *vm_pic(struct acrn_vm *vm)
 {
 	return (struct acrn_vpic *)&(vm->arch_vm.vpic);
 }
@@ -460,14 +460,12 @@ static void vpic_set_pinstate(struct acrn_vpic *vpic, uint32_t pin, uint8_t leve
  *
  * @return None
  */
-void vpic_set_irqline(const struct acrn_vm *vm, uint32_t irqline, uint32_t operation)
+void vpic_set_irqline(struct acrn_vpic *vpic, uint32_t irqline, uint32_t operation)
 {
-	struct acrn_vpic *vpic;
 	struct i8259_reg_state *i8259;
 	uint32_t pin;
 
 	if (irqline < NR_VPIC_PINS_TOTAL) {
-		vpic = vm_pic(vm);
 		i8259 = &vpic->i8259[irqline >> 3U];
 		pin = irqline;
 
@@ -507,16 +505,12 @@ vpic_pincount(void)
 }
 
 /**
- * @pre vm->vpic != NULL
+ * @pre vpic != NULL
  * @pre irqline < NR_VPIC_PINS_TOTAL
  */
-void vpic_get_irqline_trigger_mode(const struct acrn_vm *vm, uint32_t irqline,
+void vpic_get_irqline_trigger_mode(struct acrn_vpic *vpic, uint32_t irqline,
 		enum vpic_trigger *trigger)
 {
-	struct acrn_vpic *vpic;
-
-	vpic = vm_pic(vm);
-
 	if ((vpic->i8259[irqline >> 3U].elc & (1U << (irqline & 0x7U))) != 0U) {
 		*trigger = LEVEL_TRIGGER;
 	} else {
@@ -527,19 +521,16 @@ void vpic_get_irqline_trigger_mode(const struct acrn_vm *vm, uint32_t irqline,
 /**
  * @brief Get pending virtual interrupts for vPIC.
  *
- * @param[in]    vm     Pointer to target VM
+ * @param[in]    vpic   Pointer to target VM's vpic table
  * @param[inout] vecptr Pointer to vector buffer and will be filled
  *			with eligible vector if any.
  *
  * @return None
  */
-void vpic_pending_intr(struct acrn_vm *vm, uint32_t *vecptr)
+void vpic_pending_intr(struct acrn_vpic *vpic, uint32_t *vecptr)
 {
-	struct acrn_vpic *vpic;
 	struct i8259_reg_state *i8259;
 	uint32_t pin;
-
-	vpic = vm_pic(vm);
 
 	i8259 = &vpic->i8259[0];
 
@@ -594,12 +585,9 @@ static void vpic_pin_accepted(struct i8259_reg_state *i8259, uint32_t pin)
  *
  * @pre vm != NULL
  */
-void vpic_intr_accepted(struct acrn_vm *vm, uint32_t vector)
+void vpic_intr_accepted(struct acrn_vpic *vpic, uint32_t vector)
 {
-	struct acrn_vpic *vpic;
 	uint32_t pin;
-
-	vpic = vm_pic(vm);
 
 	spinlock_obtain(&(vpic->lock));
 
