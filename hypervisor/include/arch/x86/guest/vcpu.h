@@ -153,10 +153,17 @@
 #define LDTR_AR                         (0x0082U) /* LDT, type must be 2, refer to SDM Vol3 26.3.1.2 */
 #define TR_AR                           (0x008bU) /* TSS (busy), refer to SDM Vol3 26.3.1.2 */
 
+/*
 #define foreach_vcpu(idx, vm, vcpu)				\
 	for ((idx) = 0U, (vcpu) = &((vm)->hw.vcpu_array[(idx)]);	\
 		(idx) < (vm)->hw.created_vcpus;			\
 		(idx)++, (vcpu) = &((vm)->hw.vcpu_array[(idx)])) \
+		if (vcpu->state != VCPU_OFFLINE)
+*/
+#define foreach_vcpu(idx, hw, vcpu)				\
+	for ((idx) = 0U, (vcpu) = &(hw->vcpu_array[(idx)]);	\
+		(idx) < hw->created_vcpus;			\
+		(idx)++, (vcpu) = &(hw->vcpu_array[(idx)])) \
 		if (vcpu->state != VCPU_OFFLINE)
 
 enum vcpu_state {
