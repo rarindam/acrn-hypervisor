@@ -116,22 +116,22 @@ static inline bool vlapic_enabled(const struct acrn_vlapic *vlapic)
 }
 
 static struct acrn_vlapic *
-vm_lapic_from_vcpu_id(struct acrn_vm *vm, uint16_t vcpu_id)
+vm_lapic_from_vcpu_id(struct vm_hw_info *hw, uint16_t vcpu_id)
 {
 	struct acrn_vcpu *vcpu;
 
-	vcpu = vcpu_from_vid(vm, vcpu_id);
+	vcpu = &hw->vcpu_array[vcpu_id];
 
 	return vcpu_vlapic(vcpu);
 }
 
-static uint16_t vm_apicid2vcpu_id(struct acrn_vm *vm, uint32_t lapicid)
+static uint16_t vm_apicid2vcpu_id(struct vm_hw_info *hw, uint32_t lapicid)
 {
 	uint16_t i;
 	struct acrn_vcpu *vcpu;
 	uint16_t cpu_id = INVALID_CPU_ID;
 
-	foreach_vcpu(i, vm, vcpu) {
+	foreach_vcpu(i, hw, vcpu) {
 		const struct acrn_vlapic *vlapic = vcpu_vlapic(vcpu);
 		if (vlapic_get_apicid(vlapic) == lapicid) {
 			cpu_id = vcpu->vcpu_id;
@@ -1025,12 +1025,12 @@ vlapic_trigger_lvt(struct acrn_vlapic *vlapic, uint32_t lvt_index)
 	return ret;
 }
 
-static inline void set_dest_mask_phys(struct acrn_vm *vm, uint64_t *dmask, uint32_t dest)
+static inline void set_dest_mask_phys(struct vm_hw_info *hw, uint64_t *dmask, uint32_t dest)
 {
 	uint16_t vcpu_id;
 
-	vcpu_id = vm_apicid2vcpu_id(vm, dest);
-	if (vcpu_id < vm->hw.created_vcpus) {
+	vcpu_id = vm_apicid2vcpu_id(hw, dest);
+	if (vcpu_id < hw->created_vcpus) {
 		bitmap_set_nolock(vcpu_id, dmask);
 	}
 }
@@ -1093,27 +1093,26 @@ static inline bool is_dest_field_matched(const struct acrn_vlapic *vlapic, uint3
  * addressing specified by the (dest, phys, lowprio) tuple.
  */
 void
-vlapic_calc_dest(struct acrn_vm *vm, uint64_t *dmask, bool is_broadcast,
+vlapic_calc_dest(struct vm_hw_info *hw, uint64_t *dmask, bool is_broadcast,
 		uint32_t dest, bool phys, bool lowprio)
 {
 	struct acrn_vlapic *vlapic, *lowprio_dest = NULL;
 	struct acrn_vcpu *vcpu;
 	uint16_t vcpu_id;
-
 	*dmask = 0UL;
 	if (is_broadcast) {
 		/* Broadcast in both logical and physical modes. */
-		*dmask = vm_active_cpus(vm);
+		*dmask = vm_active_cpus(hw);
 	} else if (phys) {
 		/* Physical mode: "dest" is local APIC ID. */
-		set_dest_mask_phys(vm, dmask, dest);
+		set_dest_mask_phys(hw, dmask, dest);
 	} else {
 		/*
 		 * Logical mode: "dest" is message destination addr
 		 * to be compared with the logical APIC ID in LDR.
 		 */
-		foreach_vcpu(vcpu_id, vm, vcpu) {
-			vlapic = vm_lapic_from_vcpu_id(vm, vcpu_id);
+		foreach_vcpu(vcpu_id, hw, vcpu) {
+			vlapic = vm_lapic_from_vcpu_id(hw, vcpu_id);
 			if (!is_dest_field_matched(vlapic, dest)) {
 				continue;
 			}
@@ -1149,7 +1148,7 @@ vlapic_calc_dest(struct acrn_vm *vm, uint64_t *dmask, bool is_broadcast,
  * @pre is_x2apic_enabled(vlapic) == true
  */
 void
-vlapic_calc_dest_lapic_pt(struct acrn_vm *vm, uint64_t *dmask, bool is_broadcast,
+vlapic_calc_dest_lapic_pt(struct vm_hw_info *hw, uint64_t *dmask, bool is_broadcast,
 		uint32_t dest, bool phys)
 {
 	struct acrn_vlapic *vlapic;
@@ -1159,17 +1158,17 @@ vlapic_calc_dest_lapic_pt(struct acrn_vm *vm, uint64_t *dmask, bool is_broadcast
 	*dmask = 0UL;
 	if (is_broadcast) {
 		/* Broadcast in both logical and physical modes. */
-		*dmask = vm_active_cpus(vm);
+		*dmask = vm_active_cpus(hw);
 	} else if (phys) {
 		/* Physical mode: "dest" is local APIC ID. */
-		set_dest_mask_phys(vm, dmask, dest);
+		set_dest_mask_phys(hw, dmask, dest);
 	} else {
 		/*
 		 * Logical mode: "dest" is message destination addr
 		 * to be compared with the logical APIC ID in LDR.
 		 */
-		foreach_vcpu(vcpu_id, vm, vcpu) {
-			vlapic = vm_lapic_from_vcpu_id(vm, vcpu_id);
+		foreach_vcpu(vcpu_id, hw, vcpu) {
+			vlapic = vm_lapic_from_vcpu_id(hw, vcpu_id);
 			if (!is_dest_field_matched(vlapic, dest)) {
 				continue;
 			}
@@ -1266,16 +1265,16 @@ static void vlapic_icrlo_write_handler(struct acrn_vlapic *vlapic)
 
 		switch (shorthand) {
 		case APIC_DEST_DESTFLD:
-			vlapic_calc_dest(vlapic->vm, &dmask, is_broadcast, dest, phys, false);
+			vlapic_calc_dest(&vlapic->vm->hw, &dmask, is_broadcast, dest, phys, false);
 			break;
 		case APIC_DEST_SELF:
 			bitmap_set_nolock(vlapic->vcpu->vcpu_id, &dmask);
 			break;
 		case APIC_DEST_ALLISELF:
-			dmask = vm_active_cpus(vlapic->vm);
+			dmask = vm_active_cpus(&vlapic->vm->hw);
 			break;
 		case APIC_DEST_ALLESELF:
-			dmask = vm_active_cpus(vlapic->vm);
+			dmask = vm_active_cpus(&vlapic->vm->hw);
 			bitmap_clear_nolock(vlapic->vcpu->vcpu_id, &dmask);
 			break;
 		default:
@@ -1804,7 +1803,7 @@ vlapic_receive_intr(struct acrn_vm *vm, bool level, uint32_t dest, bool phys,
 		 * all interrupts originating from the ioapic or MSI specify the
 		 * 'dest' in the legacy xAPIC format.
 		 */
-		vlapic_calc_dest(vm, &dmask, false, dest, phys, lowprio);
+		vlapic_calc_dest(&vm->hw, &dmask, false, dest, phys, lowprio);
 
 		for (vcpu_id = 0U; vcpu_id < vm->hw.created_vcpus; vcpu_id++) {
 			struct acrn_vlapic *vlapic;
@@ -1869,14 +1868,14 @@ vlapic_set_local_intr(struct acrn_vm *vm, uint16_t vcpu_id_arg, uint32_t lvt_ind
 	        error = -EINVAL;
 	} else {
 		if (vcpu_id == BROADCAST_CPU_ID) {
-			dmask = vm_active_cpus(vm);
+			dmask = vm_active_cpus(&vm->hw);
 		} else {
 			bitmap_set_nolock(vcpu_id, &dmask);
 		}
 		error = 0;
 		for (vcpu_id = 0U; vcpu_id < vm->hw.created_vcpus; vcpu_id++) {
 			if ((dmask & (1UL << vcpu_id)) != 0UL) {
-				vlapic = vm_lapic_from_vcpu_id(vm, vcpu_id);
+				vlapic = vm_lapic_from_vcpu_id(&(vm->hw), vcpu_id);
 				error = vlapic_trigger_lvt(vlapic, lvt_index);
 				if (error != 0) {
 					break;
@@ -1996,7 +1995,7 @@ static inline  uint32_t x2apic_msr_to_regoff(uint32_t msr)
  */
 
 static int32_t
-vlapic_x2apic_pt_icr_access(struct acrn_vm *vm, uint64_t val)
+vlapic_x2apic_pt_icr_access(struct vm_hw_info *hw, uint64_t val)
 {
 	uint32_t papic_id, vapic_id = (uint32_t)(val >> 32U);
 	uint32_t icr_low = (uint32_t)val;
@@ -2014,9 +2013,9 @@ vlapic_x2apic_pt_icr_access(struct acrn_vm *vm, uint64_t val)
 		pr_err("Logical destination mode or shorthands \
 				not supported in ICR forpartition mode\n");
 	} else {
-		vcpu_id = vm_apicid2vcpu_id(vm, vapic_id);
-		if ((vcpu_id < vm->hw.created_vcpus) && (vm->hw.vcpu_array[vcpu_id].state != VCPU_OFFLINE)) {
-			target_vcpu = vcpu_from_vid(vm, vcpu_id);
+		vcpu_id = vm_apicid2vcpu_id(hw, vapic_id);
+		if ((vcpu_id < hw->created_vcpus) && (hw->vcpu_array[vcpu_id].state != VCPU_OFFLINE)) {
+			target_vcpu = &(hw->vcpu_array[vcpu_id]);
 
 			switch (mode) {
 			case APIC_DELMODE_INIT:
@@ -2110,7 +2109,7 @@ int32_t vlapic_x2apic_write(struct acrn_vcpu *vcpu, uint32_t msr, uint64_t val)
 		if (is_lapic_pt_configured(vcpu->vm)) {
 			switch (msr) {
 			case MSR_IA32_EXT_APIC_ICR:
-				error = vlapic_x2apic_pt_icr_access(vcpu->vm, val);
+				error = vlapic_x2apic_pt_icr_access(&vcpu->vm->hw, val);
 				break;
 			default:
 				pr_err("%s: unexpected MSR[0x%x] write with lapic_pt", __func__, msr);

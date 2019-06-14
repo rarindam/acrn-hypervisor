@@ -535,6 +535,7 @@ int32_t shutdown_vm(struct acrn_vm *vm)
 	struct acrn_vcpu *vcpu = NULL;
 	struct acrn_vm_config *vm_config = NULL;
 	int32_t ret = 0;
+	struct vm_hw_info *hw = NULL;
 
 	pause_vm(vm);
 
@@ -542,7 +543,8 @@ int32_t shutdown_vm(struct acrn_vm *vm)
 	if (vm->state == VM_PAUSED) {
 		vm->state = VM_POWERED_OFF;
 
-		foreach_vcpu(i, vm, vcpu) {
+		hw = &vm->hw;
+		foreach_vcpu(i, hw, vcpu) {
 			reset_vcpu(vcpu);
 			offline_vcpu(vcpu);
 
@@ -607,9 +609,10 @@ int32_t reset_vm(struct acrn_vm *vm)
 	uint16_t i;
 	struct acrn_vcpu *vcpu = NULL;
 	int32_t ret;
+	struct vm_hw_info *hw = &vm->hw;
 
 	if (vm->state == VM_PAUSED) {
-		foreach_vcpu(i, vm, vcpu) {
+		foreach_vcpu(i, hw, vcpu) {
 			reset_vcpu(vcpu);
 		}
 
@@ -637,19 +640,21 @@ void pause_vm(struct acrn_vm *vm)
 {
 	uint16_t i;
 	struct acrn_vcpu *vcpu = NULL;
+	struct vm_hw_info *hw = &vm->hw;
+	
 
 	if (vm->state != VM_PAUSED) {
 		if (is_rt_vm(vm)) {
 			/* Only when RTVM is powering off by itself, we can pause vcpu */
 			if (vm->state == VM_POWERING_OFF) {
-				foreach_vcpu(i, vm, vcpu) {
+				foreach_vcpu(i, hw, vcpu) {
 					pause_vcpu(vcpu, VCPU_ZOMBIE);
 				}
 
 				vm->state = VM_PAUSED;
 			}
 		} else {
-			foreach_vcpu(i, vm, vcpu) {
+			foreach_vcpu(i, hw, vcpu) {
 				pause_vcpu(vcpu, VCPU_ZOMBIE);
 			}
 

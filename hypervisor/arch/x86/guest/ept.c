@@ -103,6 +103,7 @@ void ept_mr_add(struct acrn_vm *vm, uint64_t *pml4_page,
 	uint16_t i;
 	struct acrn_vcpu *vcpu;
 	uint64_t prot = prot_orig;
+	struct vm_hw_info *hw = &vm->hw;
 
 	dev_dbg(ACRN_DBG_EPT, "%s, vm[%d] hpa: 0x%016llx gpa: 0x%016llx size: 0x%016llx prot: 0x%016x\n",
 			__func__, vm->vm_id, hpa, gpa, size, prot);
@@ -117,7 +118,7 @@ void ept_mr_add(struct acrn_vm *vm, uint64_t *pml4_page,
 
 	mmu_add(pml4_page, hpa, gpa, size, prot, &vm->arch_vm.ept_mem_ops);
 
-	foreach_vcpu(i, vm, vcpu) {
+	foreach_vcpu(i, hw, vcpu) {
 		vcpu_make_request(vcpu, ACRN_REQUEST_EPT_FLUSH);
 	}
 }
@@ -129,6 +130,7 @@ void ept_mr_modify(struct acrn_vm *vm, uint64_t *pml4_page,
 	struct acrn_vcpu *vcpu;
 	uint16_t i;
 	uint64_t local_prot = prot_set;
+	struct vm_hw_info *hw = &vm->hw;
 
 	dev_dbg(ACRN_DBG_EPT, "%s,vm[%d] gpa 0x%llx size 0x%llx\n", __func__, vm->vm_id, gpa, size);
 
@@ -138,7 +140,7 @@ void ept_mr_modify(struct acrn_vm *vm, uint64_t *pml4_page,
 
 	mmu_modify_or_del(pml4_page, gpa, size, local_prot, prot_clr, &(vm->arch_vm.ept_mem_ops), MR_MODIFY);
 
-	foreach_vcpu(i, vm, vcpu) {
+	foreach_vcpu(i, hw, vcpu) {
 		vcpu_make_request(vcpu, ACRN_REQUEST_EPT_FLUSH);
 	}
 }
@@ -149,12 +151,13 @@ void ept_mr_del(struct acrn_vm *vm, uint64_t *pml4_page, uint64_t gpa, uint64_t 
 {
 	struct acrn_vcpu *vcpu;
 	uint16_t i;
+	struct vm_hw_info *hw = &vm->hw;
 
 	dev_dbg(ACRN_DBG_EPT, "%s,vm[%d] gpa 0x%llx size 0x%llx\n", __func__, vm->vm_id, gpa, size);
 
 	mmu_modify_or_del(pml4_page, gpa, size, 0UL, 0UL, &vm->arch_vm.ept_mem_ops, MR_DEL);
 
-	foreach_vcpu(i, vm, vcpu) {
+	foreach_vcpu(i, hw, vcpu) {
 		vcpu_make_request(vcpu, ACRN_REQUEST_EPT_FLUSH);
 	}
 }

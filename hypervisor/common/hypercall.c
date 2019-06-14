@@ -52,10 +52,11 @@ int32_t hcall_sos_offline_cpu(struct acrn_vm *vm, uint64_t lapicid)
 	struct acrn_vcpu *vcpu;
 	uint16_t i;
 	int32_t ret = 0;
+	struct vm_hw_info *hw = &vm->hw;
 
 	pr_info("sos offline cpu with lapicid %lld", lapicid);
 
-	foreach_vcpu(i, vm, vcpu) {
+	foreach_vcpu(i, hw, vcpu) {
 		if (vlapic_get_apicid(vcpu_vlapic(vcpu)) == lapicid) {
 			/* should not offline BSP */
 			if (vcpu->vcpu_id == BOOT_CPU_ID) {
@@ -432,7 +433,7 @@ static void inject_msi_lapic_pt(struct acrn_vm *vm, const struct acrn_msi_entry 
 		 * the delivery mode of vmsi will be forwarded to ICR delievry field
 		 * and handled by hardware.
 		 */
-		vlapic_calc_dest_lapic_pt(vm, &vdmask, false, vdest, phys);
+		vlapic_calc_dest_lapic_pt(&vm->hw, &vdmask, false, vdest, phys);
 		dev_dbg(ACRN_DBG_LAPICPT, "%s: vcpu destination mask 0x%016llx", __func__, vdmask);
 
 		vcpu_id = ffs64(vdmask);
