@@ -851,6 +851,7 @@ int32_t profiling_vm_list_info(struct acrn_vm *vm, uint64_t addr)
 	uint16_t i, j;
 	struct profiling_vm_info_list vm_info_list;
 	uint16_t pcpu_nums = get_pcpu_nums();
+	struct vm_hw_info *hw = NULL;
 
 	(void)memset((void *)&vm_info_list, 0U, sizeof(vm_info_list));
 
@@ -888,7 +889,8 @@ int32_t profiling_vm_list_info(struct acrn_vm *vm, uint64_t addr)
 				tmp_vm->vm_id, 16U);
 		vm_info_list.vm_list[vm_idx].num_vcpus = 0;
 		i = 0U;
-		foreach_vcpu(i, tmp_vm, vcpu) {
+		hw = &tmp_vm->hw;
+		foreach_vcpu(i, hw, vcpu) {
 			vm_info_list.vm_list[vm_idx].cpu_map[i].vcpu_id
 				= vcpu->vcpu_id;
 			vm_info_list.vm_list[vm_idx].cpu_map[i].pcpu_id

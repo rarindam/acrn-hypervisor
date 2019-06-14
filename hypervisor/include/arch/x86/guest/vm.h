@@ -151,13 +151,13 @@ struct acrn_vm {
 /*
  * @pre vlapic != NULL
  */
-static inline uint64_t vm_active_cpus(const struct acrn_vm *vm)
+static inline uint64_t vm_active_cpus(const struct vm_hw_info *hw)
 {
 	uint64_t dmask = 0UL;
 	uint16_t i;
 	const struct acrn_vcpu *vcpu;
 
-	foreach_vcpu(i, vm, vcpu) {
+	foreach_vcpu(i, hw, vcpu) {
 		bitmap_set_nolock(vcpu->vcpu_id, &dmask);
 	}
 
@@ -177,8 +177,9 @@ static inline struct acrn_vcpu *vcpu_from_pid(struct acrn_vm *vm, uint16_t pcpu_
 {
 	uint16_t i;
 	struct acrn_vcpu *vcpu, *target_vcpu = NULL;
+	struct vm_hw_info *hw = &vm->hw;
 
-	foreach_vcpu(i, vm, vcpu) {
+	foreach_vcpu(i, hw, vcpu) {
 		if (vcpu->pcpu_id == pcpu_id) {
 			target_vcpu = vcpu;
 			break;

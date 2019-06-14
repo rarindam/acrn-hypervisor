@@ -629,6 +629,7 @@ static int32_t shell_list_vcpu(__unused int32_t argc, __unused char **argv)
 	char temp_str[MAX_STR_SIZE];
 	struct acrn_vm *vm;
 	struct acrn_vcpu *vcpu;
+	struct vm_hw_info *hw = NULL;
 	char state[32];
 	uint16_t i;
 	uint16_t idx;
@@ -641,7 +642,8 @@ static int32_t shell_list_vcpu(__unused int32_t argc, __unused char **argv)
 		if (is_poweroff_vm(vm)) {
 			continue;
 		}
-		foreach_vcpu(i, vm, vcpu) {
+		hw = &vm->hw;
+		foreach_vcpu(i, hw, vcpu) {
 			switch (vcpu->state) {
 			case VCPU_INIT:
 				(void)strncpy_s(state, 32U, "Init", 32U);
